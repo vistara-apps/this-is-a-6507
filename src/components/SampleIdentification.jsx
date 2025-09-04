@@ -358,6 +358,5 @@ export function SampleIdentification({ onProjectCreate, projects }) {
       </div>
     )}
     </div>
-  </div>
   );
 }
