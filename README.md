@@ -2,6 +2,8 @@
 
 **Clear sample rights and avoid DMCA takedowns with AI-powered tools.**
 
+<!-- Build status: Fixed JSX syntax issues -->
+
 SampleSource Pro is a comprehensive platform for remix artists to efficiently secure sample rights, negotiate licenses, and detect uncleared samples in their creations.
 
 ## 🚀 Features
