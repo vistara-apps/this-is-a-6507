@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dashboard } from './components/Dashboard';
-import { SampleIdentification } from './components/SampleIdentification';
+import SampleIdentification from './components/SampleIdentification';
 import { RightsNegotiation } from './components/RightsNegotiation';
 import { UnclearedDetection } from './components/UnclearedDetection';
 import { DMCAToolkit } from './components/DMCAToolkit';
