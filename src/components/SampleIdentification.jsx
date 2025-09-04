@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Upload, Music, Search, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Upload, Music, Search, CheckCircle, AlertCircle, Clock, RefreshCw } from 'lucide-react';
+import apiService from '../services/api.js';
 
 export function SampleIdentification({ onProjectCreate, projects }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -36,52 +40,91 @@ export function SampleIdentification({ onProjectCreate, projects }) {
   const handleFile = (file) => {
     if (file.type.startsWith('audio/')) {
       setUploadedFile(file);
+      setProjectName(file.name.replace(/\.[^/.]+$/, '')); // Remove file extension
+      setError(null);
     } else {
-      alert('Please upload an audio file');
+      setError('Please upload an audio file (MP3, WAV, M4A, AAC)');
     }
   };
 
   const analyzeAudio = async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFile || !projectName.trim()) {
+      setError('Please provide a project name and upload an audio file');
+      return;
+    }
+
+    if (!apiService.isAuthenticated()) {
+      setError('Please log in to analyze audio files');
+      return;
+    }
 
     setIsAnalyzing(true);
+    setError(null);
+    setUploadProgress(0);
     
-    // Simulate audio analysis with mock data
-    setTimeout(() => {
-      const mockResults = {
-        projectId: Date.now().toString(),
-        projectName: uploadedFile.name,
-        audioFileUrl: URL.createObjectURL(uploadedFile),
-        detectionResults: [
-          {
-            sampleId: '1',
-            identifiedSampleName: 'Break My Soul - Beyoncé',
-            copyrightHolder: 'Parkwood Entertainment',
-            licensingStatus: 'uncleared',
-            confidence: 95,
-            startTime: '0:45',
-            duration: '3.2s'
-          },
-          {
-            sampleId: '2',
-            identifiedSampleName: 'Funky Drummer - James Brown',
-            copyrightHolder: 'Universal Music Group',
-            licensingStatus: 'pending',
-            confidence: 88,
-            startTime: '1:23',
-            duration: '2.1s'
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('audioFile', uploadedFile);
+      formData.append('projectName', projectName.trim());
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
           }
-        ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+          return prev + 10;
+        });
+      }, 200);
+
+      // Create project with audio upload
+      const response = await apiService.createProject(formData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Poll for analysis results
+      const pollForResults = async (projectId, attempts = 0) => {
+        if (attempts > 30) { // Max 30 attempts (30 seconds)
+          throw new Error('Analysis timeout - please try again');
+        }
+
+        try {
+          const analysisResponse = await apiService.getProjectAnalysis(projectId);
+          
+          if (analysisResponse.analysisComplete) {
+            setAnalysisResults({
+              ...response.project,
+              samples: analysisResponse.samples,
+              detectionResults: analysisResponse.detectionResults
+            });
+            setIsAnalyzing(false);
+            
+            // Add to projects list
+            if (onProjectCreate) {
+              onProjectCreate(prev => [...prev, response.project]);
+            }
+          } else {
+            // Continue polling
+            setTimeout(() => pollForResults(projectId, attempts + 1), 1000);
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
+          setTimeout(() => pollForResults(projectId, attempts + 1), 2000);
+        }
       };
 
-      setAnalysisResults(mockResults);
-      setIsAnalyzing(false);
+      // Start polling for results
+      setTimeout(() => pollForResults(response.project.projectId), 2000);
 
-      // Add to projects
-      onProjectCreate(prev => [...prev, mockResults]);
-    }, 3000);
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      setError(error.message || 'Analysis failed. Please try again.');
+      setIsAnalyzing(false);
+      setUploadProgress(0);
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -141,20 +184,36 @@ export function SampleIdentification({ onProjectCreate, projects }) {
           </label>
         </div>
 
+        {/* Project Name Input */}
         {uploadedFile && (
-          <div className="mt-4 flex items-center justify-between bg-white bg-opacity-10 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <Music className="text-white" size={24} />
-              <div>
-                <p className="text-white font-medium">{uploadedFile.name}</p>
-                <p className="text-white text-opacity-70 text-sm">
-                  {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
+          <div className="mt-4 space-y-4">
+            <div>
+              <label htmlFor="project-name" className="block text-white font-medium mb-2">
+                Project Name
+              </label>
+              <input
+                id="project-name"
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Enter a name for your project"
+                className="w-full px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg text-white placeholder-white placeholder-opacity-50 focus:outline-none focus:border-accent"
+              />
             </div>
-            <button
-              onClick={analyzeAudio}
-              disabled={isAnalyzing}
+            
+            <div className="flex items-center justify-between bg-white bg-opacity-10 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <Music className="text-white" size={24} />
+                <div>
+                  <p className="text-white font-medium">{uploadedFile.name}</p>
+                  <p className="text-white text-opacity-70 text-sm">
+                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={analyzeAudio}
+                disabled={isAnalyzing || !projectName.trim()}
               className="bg-accent text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50"
             >
               {isAnalyzing ? (
@@ -171,48 +230,104 @@ export function SampleIdentification({ onProjectCreate, projects }) {
             </button>
           </div>
         )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 bg-red-500 bg-opacity-20 border border-red-500 border-opacity-50 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="text-red-400" size={20} />
+              <p className="text-red-400 font-medium">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Progress */}
+        {isAnalyzing && uploadProgress > 0 && (
+          <div className="mt-4 bg-white bg-opacity-10 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white font-medium">
+                {uploadProgress < 100 ? 'Uploading...' : 'Analyzing audio...'}
+              </span>
+              <span className="text-white text-opacity-70">{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
+              <div 
+                className="bg-accent h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            {uploadProgress >= 100 && (
+              <div className="flex items-center space-x-2 mt-2 text-white text-opacity-70">
+                <RefreshCw className="animate-spin" size={16} />
+                <span className="text-sm">Processing audio and identifying samples...</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Analysis Results */}
       {analysisResults && (
         <div className="glass-effect rounded-lg p-6">
-          <h2 className="text-2xl font-semibold text-white mb-4">Analysis Results</h2>
-          <div className="space-y-4">
-            {analysisResults.detectionResults.map((sample) => (
-              <div key={sample.sampleId} className="bg-white bg-opacity-10 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">{sample.identifiedSampleName}</h3>
-                    <p className="text-white text-opacity-70">{sample.copyrightHolder}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(sample.licensingStatus)}
-                    <span className="text-white text-sm capitalize">{sample.licensingStatus}</span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-white text-opacity-70">Confidence</span>
-                    <p className="text-white font-medium">{sample.confidence}%</p>
-                  </div>
-                  <div>
-                    <span className="text-white text-opacity-70">Start Time</span>
-                    <p className="text-white font-medium">{sample.startTime}</p>
-                  </div>
-                  <div>
-                    <span className="text-white text-opacity-70">Duration</span>
-                    <p className="text-white font-medium">{sample.duration}</p>
-                  </div>
-                  <div>
-                    <button className="bg-accent text-white px-3 py-1 rounded text-sm hover:bg-opacity-90 transition-colors">
-                      Start License
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-white">Analysis Results</h2>
+            <div className="text-white text-opacity-70 text-sm">
+              Project: {analysisResults.projectName}
+            </div>
           </div>
+          
+          {analysisResults.samples && analysisResults.samples.length > 0 ? (
+            <div className="space-y-4">
+              {analysisResults.samples.map((sample) => (
+                <div key={sample.sampleId} className="bg-white bg-opacity-10 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white">{sample.identifiedSampleName}</h3>
+                      <p className="text-white text-opacity-70">{sample.copyrightHolder}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(sample.licensingStatus)}
+                      <span className="text-white text-sm capitalize">{sample.licensingStatus}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-white text-opacity-70">Confidence:</span>
+                      <p className="text-white font-medium">{sample.confidence}%</p>
+                    </div>
+                    <div>
+                      <span className="text-white text-opacity-70">Start Time:</span>
+                      <p className="text-white font-medium">{sample.startTime}</p>
+                    </div>
+                    <div>
+                      <span className="text-white text-opacity-70">Duration:</span>
+                      <p className="text-white font-medium">{sample.duration}</p>
+                    </div>
+                    <div>
+                      <span className="text-white text-opacity-70">Risk Level:</span>
+                      <p className={`font-medium ${
+                        sample.riskLevel === 'Critical' ? 'text-red-400' :
+                        sample.riskLevel === 'High' ? 'text-orange-400' :
+                        sample.riskLevel === 'Medium' ? 'text-yellow-400' :
+                        'text-green-400'
+                      }`}>
+                        {sample.riskLevel}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Music className="mx-auto text-white text-opacity-50 mb-4" size={48} />
+              <p className="text-white text-opacity-70">No samples detected in this audio file.</p>
+              <p className="text-white text-opacity-50 text-sm mt-2">
+                This could mean the track is original or contains unrecognized samples.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
