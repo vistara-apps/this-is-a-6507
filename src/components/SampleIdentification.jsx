@@ -265,96 +265,98 @@ export function SampleIdentification({ onProjectCreate, projects }) {
           </div>
         )}
       </div>
+    )}
 
-      {/* Analysis Results */}
-      {analysisResults && (
-        <div className="glass-effect rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-white">Analysis Results</h2>
-            <div className="text-white text-opacity-70 text-sm">
-              Project: {analysisResults.projectName}
-            </div>
+    {/* Analysis Results */}
+    {analysisResults && (
+      <div className="glass-effect rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold text-white">Analysis Results</h2>
+          <div className="text-white text-opacity-70 text-sm">
+            Project: {analysisResults.projectName}
           </div>
-          
-          {analysisResults.samples && analysisResults.samples.length > 0 ? (
-            <div className="space-y-4">
-              {analysisResults.samples.map((sample) => (
-                <div key={sample.sampleId} className="bg-white bg-opacity-10 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white">{sample.identifiedSampleName}</h3>
-                      <p className="text-white text-opacity-70">{sample.copyrightHolder}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(sample.licensingStatus)}
-                      <span className="text-white text-sm capitalize">{sample.licensingStatus}</span>
-                    </div>
+        </div>
+        
+        {analysisResults.samples && analysisResults.samples.length > 0 ? (
+          <div className="space-y-4">
+            {analysisResults.samples.map((sample) => (
+              <div key={sample.sampleId} className="bg-white bg-opacity-10 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-white">{sample.identifiedSampleName}</h3>
+                    <p className="text-white text-opacity-70">{sample.copyrightHolder}</p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-white text-opacity-70">Confidence:</span>
-                      <p className="text-white font-medium">{sample.confidence}%</p>
-                    </div>
-                    <div>
-                      <span className="text-white text-opacity-70">Start Time:</span>
-                      <p className="text-white font-medium">{sample.startTime}</p>
-                    </div>
-                    <div>
-                      <span className="text-white text-opacity-70">Duration:</span>
-                      <p className="text-white font-medium">{sample.duration}</p>
-                    </div>
-                    <div>
-                      <span className="text-white text-opacity-70">Risk Level:</span>
-                      <p className={`font-medium ${
-                        sample.riskLevel === 'Critical' ? 'text-red-400' :
-                        sample.riskLevel === 'High' ? 'text-orange-400' :
-                        sample.riskLevel === 'Medium' ? 'text-yellow-400' :
-                        'text-green-400'
-                      }`}>
-                        {sample.riskLevel}
-                      </p>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(sample.licensingStatus)}
+                    <span className="text-white text-sm capitalize">{sample.licensingStatus}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Music className="mx-auto text-white text-opacity-50 mb-4" size={48} />
-              <p className="text-white text-opacity-70">No samples detected in this audio file.</p>
-              <p className="text-white text-opacity-50 text-sm mt-2">
-                This could mean the track is original or contains unrecognized samples.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Recent Projects */}
-      {projects.length > 0 && (
-        <div className="glass-effect rounded-lg p-6">
-          <h2 className="text-2xl font-semibold text-white mb-4">Recent Projects</h2>
-          <div className="space-y-3">
-            {projects.map((project) => (
-              <div key={project.projectId} className="flex items-center justify-between bg-white bg-opacity-10 rounded-lg p-3">
-                <div className="flex items-center space-x-3">
-                  <Music className="text-white" size={20} />
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <p className="text-white font-medium">{project.projectName}</p>
-                    <p className="text-white text-opacity-70 text-sm">
-                      {project.detectionResults?.length || 0} samples detected
+                    <span className="text-white text-opacity-70">Confidence:</span>
+                    <p className="text-white font-medium">{sample.confidence}%</p>
+                  </div>
+                  <div>
+                    <span className="text-white text-opacity-70">Start Time:</span>
+                    <p className="text-white font-medium">{sample.startTime}</p>
+                  </div>
+                  <div>
+                    <span className="text-white text-opacity-70">Duration:</span>
+                    <p className="text-white font-medium">{sample.duration}</p>
+                  </div>
+                  <div>
+                    <span className="text-white text-opacity-70">Risk Level:</span>
+                    <p className={`font-medium ${
+                      sample.riskLevel === 'Critical' ? 'text-red-400' :
+                      sample.riskLevel === 'High' ? 'text-orange-400' :
+                      sample.riskLevel === 'Medium' ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {sample.riskLevel}
                     </p>
                   </div>
                 </div>
-                <span className="text-white text-opacity-70 text-sm">
-                  {new Date(project.createdAt).toLocaleDateString()}
-                </span>
               </div>
             ))}
           </div>
+        ) : (
+          <div className="text-center py-8">
+            <Music className="mx-auto text-white text-opacity-50 mb-4" size={48} />
+            <p className="text-white text-opacity-70">No samples detected in this audio file.</p>
+            <p className="text-white text-opacity-50 text-sm mt-2">
+              This could mean the track is original or contains unrecognized samples.
+            </p>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Recent Projects */}
+    {projects.length > 0 && (
+      <div className="glass-effect rounded-lg p-6">
+        <h2 className="text-2xl font-semibold text-white mb-4">Recent Projects</h2>
+        <div className="space-y-3">
+          {projects.map((project) => (
+            <div key={project.projectId} className="flex items-center justify-between bg-white bg-opacity-10 rounded-lg p-3">
+              <div className="flex items-center space-x-3">
+                <Music className="text-white" size={20} />
+                <div>
+                  <p className="text-white font-medium">{project.projectName}</p>
+                  <p className="text-white text-opacity-70 text-sm">
+                    {project.detectionResults?.length || 0} samples detected
+                  </p>
+                </div>
+              </div>
+              <span className="text-white text-opacity-70 text-sm">
+                {new Date(project.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
+    )}
     </div>
+  </div>
   );
 }
