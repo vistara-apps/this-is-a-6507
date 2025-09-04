@@ -214,20 +214,21 @@ export function SampleIdentification({ onProjectCreate, projects }) {
               <button
                 onClick={analyzeAudio}
                 disabled={isAnalyzing || !projectName.trim()}
-              className="bg-accent text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50"
-            >
-              {isAnalyzing ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Analyzing...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Search size={16} />
-                  <span>Analyze Audio</span>
-                </div>
-              )}
-            </button>
+                className="bg-accent text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors disabled:opacity-50"
+              >
+                {isAnalyzing ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Analyzing...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <Search size={16} />
+                    <span>Analyze Audio</span>
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
